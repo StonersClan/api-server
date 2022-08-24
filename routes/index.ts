@@ -2,6 +2,7 @@ import client from "../models/cassandra";
 import { types } from "cassandra-driver";
 import status from "../utils/status";
 import express from "express";
+import { pushMsgToQueue } from "../models/kafka";
 
 const router = express.Router();
 const Long = types.Long;
@@ -34,7 +35,7 @@ router.post("/address-change", async (req, res, next) => {
       aadhaarID,
     };
 
-    // TODO: send pushNotificationMsg to kafka topic
+    await pushMsgToQueue(pushNotificationMsg);
 
     const currTime = new Date();
 
