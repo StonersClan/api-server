@@ -3,6 +3,7 @@ import { types } from "cassandra-driver";
 import status from "../utils/status";
 import express from "express";
 import { pushMsgToQueue } from "../models/kafka";
+import { baseDelay } from "../utils/constants";
 
 const router = express.Router();
 const Long = types.Long;
@@ -41,12 +42,13 @@ router.post("/address-change", async (req, res, next) => {
 
     for (const serviceProvider of serviceProviders) {
       await client.execute(
-        "INSERT INTO sih.addr_mapping (aadhaar, new_addr, sp_id, ts, status) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO sih.addr_mapping (aadhaar, new_addr, sp_id, ts, last_delay, status) VALUES (?, ?, ?, ?, ?, ?)",
         [
           Long.fromNumber(aadhaarID),
           address,
           serviceProvider,
           currTime,
+          baseDelay,
           status.PENDING,
         ]
       );
@@ -107,6 +109,8 @@ router.post("/store-pref", async (req, res, next) => {
 
     const aadhaarIDLong = Long.fromNumber(parseInt(aadhaarID as string));
 
+    // TODO: add user to sih.users
+
     await client.execute(
       "UPDATE sih.pref SET pref = ? WHERE aadhaar = ? AND sp_id = ?",
       [pref, aadhaarIDLong, serviceProviderID]
@@ -137,13 +141,18 @@ router.patch("/sp", async (req, res, next) => {
 
 router.post("/address-updated", async (req, res, next) => {
   try {
-    const { aadhaarID, address, serviceProviderID } = req.body;
+    const {
+      aadhaarID,
+      address,
+      serviceProviderID,
+      status: updateStatus,
+    } = req.body;
 
     const aadhaarIDLong = Long.fromNumber(parseInt(aadhaarID as string));
 
     await client.execute(
       "UPDATE sih.addr_mapping SET status = ? WHERE aadhaar = ? AND sp_id = ? IF new_addr = ?",
-      [status.SUCCESS, aadhaarIDLong, serviceProviderID, address]
+      [updateStatus, aadhaarIDLong, serviceProviderID, address]
     );
 
     res.sendStatus(200);
@@ -155,23 +164,39 @@ router.post("/address-updated", async (req, res, next) => {
 
 router.get("/address-change-requests", async (req, res, next) => {
   try {
-    const { serviceProviderID } = req.query;
+    const { serviceProviderID, aadhaarID } = req.query;
 
-    const addrMappings = await client.execute(
-      "SELECT * FROM sih.addr_mapping WHERE sp_id = ? AND status = ? ALLOW FILTERING",
-      [serviceProviderID, status.PENDING]
-    );
+    if (!aadhaarID) {
+      const addrMappings = await client.execute(
+        "SELECT * FROM sih.addr_mapping WHERE sp_id = ? AND status = ? ALLOW FILTERING",
+        [serviceProviderID, status.PENDING]
+      );
+      let reqs = [];
+      for (const mapping of addrMappings.rows) {
+        reqs.push({
+          aadhaarID: mapping.aadhaar,
+          newAddress: mapping.new_addr,
+        });
+      }
 
-    let reqs = [];
-    for (const mapping of addrMappings.rows) {
-      reqs.push({
-        aadhaarID: mapping.aadhaar,
-        newAddress: mapping.new_addr,
-        timestamp: mapping.ts,
-      });
+      res.status(200).send(reqs);
+    } else {
+      const aadhaarIDLong = Long.fromNumber(parseInt(aadhaarID as string));
+      const addrMappings = await client.execute(
+        "SELECT * FROM sih.addr_mapping WHERE aadhar = ? AND sp_id = ?",
+        [aadhaarIDLong, serviceProviderID]
+      );
+      if (addrMappings.rows.length === 0) {
+        res.status(400);
+        return;
+      }
+      res.status(200).send([
+        {
+          aadhaarID: aadhaarIDLong,
+          newAddress: addrMappings.rows[0].new_addr,
+        },
+      ]);
     }
-
-    res.status(200).send(reqs);
   } catch (err) {
     console.log(err);
     res.sendStatus(500);

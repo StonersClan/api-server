@@ -12,9 +12,9 @@ const aadhaarExists = async (aadhaarIDLong: Long.Long) => {
 };
 
 router.post("/address-change", async (req, res, next) => {
-  const { aadhaarID, address } = req.body;
+  const { aadhaarID, address, status } = req.body;
 
-  if (aadhaarID?.length !== 12 || !address) {
+  if (aadhaarID?.length !== 12 || !address || (status !== "SUCCESS" && status !== "DENIED")) {
     res.sendStatus(400);
     return;
   }
