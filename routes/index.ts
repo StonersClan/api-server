@@ -109,8 +109,6 @@ router.post("/store-pref", async (req, res, next) => {
 
     const aadhaarIDLong = Long.fromNumber(parseInt(aadhaarID as string));
 
-    // TODO: add user to sih.users
-
     await client.execute(
       "UPDATE sih.pref SET pref = ? WHERE aadhaar = ? AND sp_id = ?",
       [pref, aadhaarIDLong, serviceProviderID]
@@ -128,8 +126,8 @@ router.patch("/sp", async (req, res, next) => {
     const { id, name, authEmail, pushNotificationDetails } = req.body;
 
     await client.execute(
-      "UPDATE sih.sp SET name = ?, auth_email = ?, push_notification_details = ? WHERE id = ?",
-      [name, authEmail, pushNotificationDetails, id]
+      "UPDATE sih.sp SET name = ?, push_notification_details = ? WHERE id = ?",
+      [name, pushNotificationDetails, id]
     );
 
     res.status(200).send("Service Provider updated successfully");
@@ -192,7 +190,7 @@ router.get("/address-change-requests", async (req, res, next) => {
       }
       res.status(200).send([
         {
-          aadhaarID: aadhaarIDLong,
+          aadhaarID: aadhaarIDLong.toString(),
           newAddress: addrMappings.rows[0].new_addr,
         },
       ]);
