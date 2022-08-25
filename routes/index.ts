@@ -48,7 +48,7 @@ router.post("/address-change", async (req, res, next) => {
           address,
           serviceProvider,
           currTime,
-          baseDelay,
+          Long.fromNumber(baseDelay),
           status.PENDING,
         ]
       );
@@ -196,6 +196,28 @@ router.get("/address-change-requests", async (req, res, next) => {
           newAddress: addrMappings.rows[0].new_addr,
         },
       ]);
+    }
+  } catch (err) {
+    console.log(err);
+    res.sendStatus(500);
+  }
+});
+
+router.post("/verify-auth-code", async (req, res, next) => {
+  try {
+    const { code } = req.body;
+    const result = await client.execute(
+      "SELECT * FROM sih.sp_auth_codes WHERE code = ?",
+      [code]
+    );
+    if (result.rows.length === 0) {
+      return res.status(200).send({
+        valid: false,
+      });
+    } else {
+      return res.status(200).send({
+        valid: true,
+      });
     }
   } catch (err) {
     console.log(err);
