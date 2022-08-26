@@ -22,7 +22,7 @@ app.use((req: Request, res: Response, next: Function) => {
 });
 
 app.use(express.json());
-// app.use(auth);
+app.use(auth);
 app.use(validator);
 app.use(routes);
 

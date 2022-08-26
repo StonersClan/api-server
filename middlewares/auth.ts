@@ -53,12 +53,12 @@ router.patch("/sp", async (req, res, next) => {
   res.sendStatus(401);
 });
 
-// router.post("/address-updated", async (req, res, next) => {
-//   const { code } = req.body;
-//   if (await verifySPAuthCode(code)) {
-//     next();
-//   }
-//   res.sendStatus(401);
-// });
+router.post("/address-updated", async (req, res, next) => {
+  const { code } = req.body;
+  if (await verifySPAuthCode(code)) {
+    next();
+  }
+  res.sendStatus(401);
+});
 
 export default router;
