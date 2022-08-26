@@ -17,7 +17,7 @@ router.post("/address-change", async (req, res, next) => {
   if (
     typeof aadhaarID !== "number" ||
     (aadhaarID as number)?.toString().length !== 12 ||
-    !address 
+    !address
   ) {
     res.sendStatus(400);
     return;
@@ -29,10 +29,7 @@ router.post("/address-change", async (req, res, next) => {
 router.get("/address-change/status", async (req, res, next) => {
   const { aadhaarID } = req.query;
 
-  if (
-    typeof aadhaarID !== "number" ||
-    (aadhaarID as number)?.toString().length !== 12
-  ) {
+  if (aadhaarID?.length !== 12) {
     res.sendStatus(400);
     return;
   }
@@ -77,7 +74,8 @@ router.patch("/sp", async (req, res, next) => {
 router.post("/address-updated", async (req, res, next) => {
   const { aadhaarID, address, serviceProviderID, status } = req.body;
 
-  if(status !== "SUCCESS" && status !== "DENIED") {
+  if (status !== "SUCCESS" && status !== "DENIED") {
+    console.log(req.body);
     res.sendStatus(400);
     return;
   }

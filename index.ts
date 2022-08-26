@@ -12,6 +12,15 @@ const port = process.env.PORT || 8080;
 
 initMessagingQueue();
 
+app.use((req: Request, res: Response, next: Function) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept"
+  );
+  next();
+});
+
 app.use(express.json());
 // app.use(auth);
 app.use(validator);

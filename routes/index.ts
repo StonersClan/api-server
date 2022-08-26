@@ -93,6 +93,7 @@ router.get("/address-change/status", async (req, res, next) => {
       serviceProviders.push({
         name: row?.name,
         status: addrMapping.status,
+        category: row?.category || "Misc",
       });
     }
 
